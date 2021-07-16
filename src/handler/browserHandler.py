@@ -182,13 +182,17 @@ class SeleniumSession:
 
         return time_slot
 
-    def reserveSeat(self):
-        # TODO:  <15-07-21, Stefan Geyer> #
-        pass
+    def reserveSeat(self, place):
+        self.driver.get(place.url)
+        self.driver.find_element(By.NAME, "save_button").click()
+        self.goTodayPage()
 
-    def cancelSeat(self):
-        # TODO:  <15-07-21, Stefan Geyer> #
-        pass
+    def cancelSeat(self, place):
+        self.driver.get(place.url)
+        self.driver.find_element_by_xpath("/html/body/div[2]/div/div[2]/a").click()
+        assert self.driver.switch_to.alert.text == "Sind Sie sicher,\ndass Sie diesen Eintrag\nlöschen wollen?\n\n"
+        self.driver.switch_to.alert.accept()
+        self.goTodayPage()
 
     def getDateRange(self, fromDate, toDate):
         # Inclusive Start inclusive to
