@@ -150,12 +150,28 @@ class SeleniumSession:
 
         places = []
         for i in range(1, len(available_places)):
-            places.append(
-                Place(
+            # Catch except block to catch the different
+            # setup on the website if a place
+            # is reseverd. This leads to a second "div" block
+            try:
+                url = (
                     available_places[i]
                     .find_element_by_xpath("div")
                     .find_element_by_xpath("a")
-                    .get_attribute("href"),
+                    .get_attribute("href")
+                )
+            except NoSuchElementException:
+                url = (
+                    available_places[i]
+                    .find_element_by_xpath("div")
+                    .find_element_by_xpath("div")
+                    .find_element_by_xpath("a")
+                    .get_attribute("href")
+                )
+
+            places.append(
+                Place(
+                    url,
                     row_names[i].text,
                     available_places[i].text,
                 )
