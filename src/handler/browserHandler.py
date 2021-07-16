@@ -124,9 +124,9 @@ class SeleniumSession:
         )
         return time_slots
 
-    def getAvailablePlaces(self, timeslot):
-        places = [x for x in timeslot.find_elements_by_xpath("td")]
-        return places
+    def getAvailableSeats(self, timeslot):
+        seats = [x for x in timeslot.find_elements_by_xpath("td")]
+        return seats
 
     def handleRooms(self):
         available_rooms = self.getAvailableRooms()
@@ -145,40 +145,40 @@ class SeleniumSession:
         row_names = self.driver.find_elements_by_xpath(
             "//table[@id='day_main']/thead[1]/tr/th"
         )
-        available_places = self.getAvailablePlaces(timeslot)
-        assert len(row_names) == len(available_places)
+        available_seats = self.getAvailableSeats(timeslot)
+        assert len(row_names) == len(available_seats)
 
-        places = []
-        for i in range(1, len(available_places)):
+        seats = []
+        for i in range(1, len(available_seats)):
             # Catch except block to catch the different
             # setup on the website if a place
             # is reseverd. This leads to a second "div" block
             try:
                 url = (
-                    available_places[i]
+                    available_seats[i]
                     .find_element_by_xpath("div")
                     .find_element_by_xpath("a")
                     .get_attribute("href")
                 )
             except NoSuchElementException:
                 url = (
-                    available_places[i]
+                    available_seats[i]
                     .find_element_by_xpath("div")
                     .find_element_by_xpath("div")
                     .find_element_by_xpath("a")
                     .get_attribute("href")
                 )
 
-            places.append(
+            seats.append(
                 Place(
                     url,
                     row_names[i].text,
-                    available_places[i].text,
+                    available_seats[i].text,
                 )
             )
 
-        slot_name = available_places[0].text
-        time_slot = Timeslot(places, slot_name)
+        slot_name = available_seats[0].text
+        time_slot = Timeslot(seats, slot_name)
 
         return time_slot
 
@@ -218,8 +218,8 @@ class Room:
 
 
 class Timeslot:
-    def __init__(self, places, slotName):
-        self.places = places
+    def __init__(self, seats, slotName):
+        self.seats = seats
         self.slotName = slotName
 
 
