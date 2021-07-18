@@ -62,7 +62,9 @@ class SeleniumSession:
     def getDay(self, date):
         self.goToDate(date)
         rooms = self.handleRooms()
-        return rooms
+
+        day = DayModel(rooms, date)
+        return day
 
     def getDays(self, fromDate, toDate):
         range = self.getDateRange(fromDate, toDate)
@@ -74,7 +76,7 @@ class SeleniumSession:
         self.driver.find_element(By.LINK_TEXT, "gehe zum heutigen Tag").click()
         elements = self.driver.find_elements_by_xpath("//div[@id='dwm_areas']/ul/li")
         rooms = [
-            Room(x.find_element_by_xpath("a").get_attribute("href"), x.text)
+            RoomModel(x.find_element_by_xpath("a").get_attribute("href"), x.text)
             for x in elements
         ]
 
@@ -104,7 +106,7 @@ class SeleniumSession:
         available_timeslots = self.getAvailableTimeSlots(availableRoom)
         time_slots = [self.handleTimeSlot(x) for x in available_timeslots]
 
-        availableRoom.time_slots = time_slots
+        availableRoom.setTimeSlots(time_slots)
         return availableRoom
 
     def handleTimeSlot(self, timeslot):
@@ -136,15 +138,16 @@ class SeleniumSession:
                 )
 
             seats.append(
-                Seat(
+                SeatModel(
                     url,
                     row_names[i].text,
                     available_seats[i].text,
+                    self
                 )
             )
 
         slot_name = available_seats[0].text
-        time_slot = Timeslot(seats, slot_name)
+        time_slot = TimeslotModel(seats, slot_name)
 
         return time_slot
 
@@ -186,4 +189,7 @@ if __name__ == "__main__":
     session.setup()
     session.authenticate("BIBUsername", "BibPassword")
     day = session.getDay(now)
+    # day.getFreePlaces()[0].reserve()
+    # day.getReservedPlaces()[0].cancel()
+
     session.teardown()
