@@ -170,12 +170,12 @@ class SeleniumSession:
         itter = fromDate
 
         logging.debug(f"Apptoing {fromDate} to Range")
-        dates.appto(fromDate)
+        dates.append(fromDate)
 
         while itter != toDate:
             itter = itter + timedelta(days=1)
             logging.debug(f"Appending {itter} to Range")
-            dates.appto(itter)
+            dates.append(itter)
 
         return dates
 
