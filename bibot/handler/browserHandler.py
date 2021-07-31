@@ -175,22 +175,3 @@ class SeleniumSession:
 
         return dates
 
-
-if __name__ == "__main__":
-    now = date.today()
-    session = SeleniumSession()
-    session.setup()
-    session.authenticate("BIBUsername", "BibPassword")
-    scan = session.getDay(now)
-
-    available_days = scan.getAvailableDays() # e.g [date.today()]
-    available_timeslotw = scan.getAvailableTimeslots() # e.g ["vormittags", "nachmittags", ...]
-    available_rooms = scan.getAvailableRooms() # e.g ["1.OG KIT-BIB (LSW)", "2.OG KIT-BIB (LST)", "3.OG KIT-BIB (LSG)"]
-
-    # Order can be changed
-    sliced_scan = scan.getFromDays([date.today()]).getFromTimeslots(["vormittags", "nachmittags"]).getFromRooms(["3.OG KIT-BIB (LSG)"])
-
-    free_places = sliced_scan.getFreePlaces()
-    free_places[0].reserve()
-
-    session.teardown()
