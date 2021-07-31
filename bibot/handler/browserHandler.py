@@ -3,10 +3,9 @@ import logging
 from datetime import date, timedelta
 from bs4 import BeautifulSoup
 from bibot.entities.models import (
-    DayModel,
     RoomModel,
-    TimeslotModel,
     SeatModel,
+    ScanModel,
 )
 from selenium.common.exceptions import NoSuchElementException
 from selenium import webdriver
@@ -60,17 +59,17 @@ class SeleniumSession:
             f"https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/day.php?year={date.year}&month={date.month}&day={date.day}&area=20&room=140"
         )
 
-    def getDay(self, date):
+    def getDay(self, date, scan_model=ScanModel()):
         self.goToDate(date)
-        rooms = self.handleRooms()
+        self.handleRooms(date, scan_model)
 
-        day = DayModel(rooms, date)
-        return day
+        return scan_model
 
     def getDays(self, fromDate, toDate):
         range = self.getDateRange(fromDate, toDate)
-        days = [self.getDay(x) for x in range]
-        return days
+        scan_model = ScanModel()
+        [self.getDay(x, scan_model=scan_model) for x in range]
+        return scan_model
 
     def getAvailableRooms(self):
         logging.debug("Getting Available Rooms from website")
@@ -100,24 +99,26 @@ class SeleniumSession:
         seats = [x for x in timeslot.find_all("td")]
         return seats
 
-    def handleRooms(self):
+    def handleRooms(self, date, scan_model):
         available_rooms = self.getAvailableRooms()
-        rooms = [self.handleRoom(x) for x in available_rooms]
+        [self.handleRoom(x, date, scan_model) for x in available_rooms]
 
-        return rooms
+        return
 
-    def handleRoom(self, availableRoom):
+    def handleRoom(self, availableRoom, date, scan_model):
         available_timeslots, row_names = self.getAvailableTimeSlots(availableRoom)
-        time_slots = [self.handleTimeSlot(x, row_names) for x in available_timeslots]
+        [
+            self.handleTimeSlot(x, date, availableRoom, row_names, scan_model)
+            for x in available_timeslots
+        ]
 
-        availableRoom.setTimeSlots(time_slots)
-        return availableRoom
+        return
 
-    def handleTimeSlot(self, timeslot, row_names):
+    def handleTimeSlot(self, timeslot, date, availableRoom, row_names, scan_model):
         available_seats = self.getAvailableSeats(timeslot)
         assert len(row_names) == len(available_seats)
 
-        seats = []
+        slot_name = available_seats[0].text.strip()
         for i in range(1, len(available_seats)):
             url_part = available_seats[i].div.a.get("href")
             if url_part == None:
@@ -129,19 +130,19 @@ class SeleniumSession:
                 + url_part
             )
 
-            seats.append(
+            scan_model.addSeat(
+                date,
+                availableRoom.roomName,
+                slot_name,
                 SeatModel(
                     url,
                     row_names[i].text.strip(),
                     available_seats[i].text.strip(),
                     self,
-                )
+                ),
             )
 
-        slot_name = available_seats[0].text.strip()
-        time_slot = TimeslotModel(seats, slot_name)
-
-        return time_slot
+        return
 
     def reserveSeat(self, seat):
         self.driver.get(seat.url)
@@ -180,8 +181,16 @@ if __name__ == "__main__":
     session = SeleniumSession()
     session.setup()
     session.authenticate("BIBUsername", "BibPassword")
-    day = session.getDay(now)
-    # day.getFreePlaces()[0].reserve()
-    # day.getReservedPlaces()[0].cancel()
+    scan = session.getDay(now)
+
+    available_days = scan.getAvailableDays() # e.g [date.today()]
+    available_timeslotw = scan.getAvailableTimeslots() # e.g ["vormittags", "nachmittags", ...]
+    available_rooms = scan.getAvailableRooms() # e.g ["1.OG KIT-BIB (LSW)", "2.OG KIT-BIB (LST)", "3.OG KIT-BIB (LSG)"]
+
+    # Order can be changed
+    sliced_scan = scan.getFromDays([date.today()]).getFromTimeslots(["vormittags", "nachmittags"]).getFromRooms(["3.OG KIT-BIB (LSG)"])
+
+    free_places = sliced_scan.getFreePlaces()
+    free_places[0].reserve()
 
     session.teardown()
