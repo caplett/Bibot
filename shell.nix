@@ -13,6 +13,7 @@ in
       pytest
       selenium
       beautifulsoup4
+      pandas
       pudb
       jedi
     ];
