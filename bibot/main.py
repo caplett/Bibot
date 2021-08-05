@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     now = date.today()
     session.setup()
-    session.authenticate(config.username, Config.password)
+    session.authenticate(config.username, config.password)
     scan = session.getDay(config.days[0])
 
     available_days = scan.getAvailableDays() # e.g [date.today()]
