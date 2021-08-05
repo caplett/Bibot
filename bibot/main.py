@@ -2,9 +2,10 @@ from bibot.entities.config import Config
 from bibot.handler.browserHandler import SeleniumSession
 from datetime import date 
 
-# TODO: Logging
 if __name__ == "__main__":
     config = Config("Username", "Password")
+    logging.basicConfig()
+    logger = logging.getLogger(__name__)
 
     session = SeleniumSession()
 

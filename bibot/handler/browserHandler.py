@@ -11,17 +11,21 @@ from selenium.webdriver.common.by import By
 
 
 class SeleniumSession(handlerInterface):
+    logger = logging.getLogger(__name__)
+
     def setup(self) -> None:
         self.driver = webdriver.Firefox()
         self.driver.get(
             "https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/day.php?year=2021&month=07&day=11&area=20&room=140"
         )
-        self.driver.find_element(By.LINK_TEXT, "gehe zum heutigen Tag").click()
+        self.goTodayPage()
+        self.logger.info("Selenium Session successfully setup")
 
     def teardown(self) -> None:
         self.driver.quit()
+        self.logger.info("Selenium successfully teardown")
 
-    def authenticate(self, user : str, password : str) -> bool:
+    def authenticate(self, user: str, password: str) -> bool:
         self.driver.find_element(
             By.CSS_SELECTOR, "form:nth-child(2) input:nth-child(3)"
         ).click()
@@ -32,24 +36,24 @@ class SeleniumSession(handlerInterface):
 
         try:
             self.driver.find_element_by_link_text("Unbekannter Benutzer")
-            logging.error("Login did not work with given credentials")
+            self.logger.error("Login did not work with given credentials")
             return False
         except NoSuchElementException:
-            logging.info("Login worked")
+            self.logger.info("Login worked")
             return True
 
     def isAuthenticated(self) -> bool:
         self.goTodayPage()
         try:
             self.driver.find_element_by_link_text("Unbekannter Benutzer")
-            logging.info("Not logged in")
+            self.logger.info("Not logged in")
             return False
         except NoSuchElementException:
-            logging.info("Still logged in")
+            self.logger.info("Still logged in")
             return True
 
     def goTodayPage(self) -> None:
-        logging.debug("Go to Today page")
+        self.logger.debug("Go to Today page")
         self.goToDate(date.today())
 
     def goToDate(self, date: date) -> None:
@@ -57,20 +61,20 @@ class SeleniumSession(handlerInterface):
             f"https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/day.php?year={date.year}&month={date.month}&day={date.day}&area=20&room=140"
         )
 
-    def getDay(self, date : date, scan_model=ScanModel()) -> ScanModel:
+    def getDay(self, date: date, scan_model=ScanModel()) -> ScanModel:
         self.goToDate(date)
         self.handleRooms(date, scan_model)
 
         return scan_model
 
-    def getDays(self, fromDate : date, toDate: date) -> ScanModel:
+    def getDays(self, fromDate: date, toDate: date) -> ScanModel:
         range = self.getDateRange(fromDate, toDate)
         scan_model = ScanModel()
         [self.getDay(x, scan_model=scan_model) for x in range]
         return scan_model
 
     def getAvailableRooms(self) -> List[RoomModel]:
-        logging.debug("Getting Available Rooms from website")
+        self.logger.debug("Getting Available Rooms from website")
         self.driver.find_element(By.LINK_TEXT, "gehe zum heutigen Tag").click()
         elements = self.driver.find_elements_by_xpath("//div[@id='dwm_areas']/ul/li")
         rooms = [
@@ -78,9 +82,9 @@ class SeleniumSession(handlerInterface):
             for x in elements
         ]
 
-        logging.debug("Found the following available Rooms:")
+        self.logger.debug("Found the following available Rooms:")
         for x in rooms:
-            logging.debug(x.roomName)
+            self.logger.debug(x.roomName)
         return rooms
 
     def getAvailableTimeSlots(
@@ -148,32 +152,40 @@ class SeleniumSession(handlerInterface):
             )
 
     def reserveSeat(self, seat: SeatModel) -> None:
-        self.driver.get(seat.url)
-        self.driver.find_element(By.NAME, "save_button").click()
-        self.goTodayPage()
+        try:
+            self.driver.get(seat.url)
+            self.driver.find_element(By.NAME, "save_button").click()
+            self.goTodayPage()
+            self.logger.info("Reseverd Seat")
+        except Exception as e:
+            self.logger.exception("Seat Reservation did not work")
 
     def cancelSeat(self, seat: SeatModel) -> None:
-        self.driver.get(seat.url)
-        self.driver.find_element_by_xpath("/html/body/div[2]/div/div[2]/a").click()
-        assert (
-            self.driver.switch_to.alert.text
-            == "Sind Sie sicher,\ndass Sie diesen Eintrag\nlöschen wollen?\n\n"
-        )
-        self.driver.switch_to.alert.accept()
-        self.goTodayPage()
+        try:
+            self.driver.get(seat.url)
+            self.driver.find_element_by_xpath("/html/body/div[2]/div/div[2]/a").click()
+            assert (
+                self.driver.switch_to.alert.text
+                == "Sind Sie sicher,\ndass Sie diesen Eintrag\nlöschen wollen?\n\n"
+            )
+            self.driver.switch_to.alert.accept()
+            self.goTodayPage()
+            self.logger.info("Canceled Seat")
+        except Exception as e:
+            self.logger.exception("Seat Cancelation did not work")
 
     def getDateRange(self, fromDate: date, toDate: date) -> List[date]:
         # Inclusive Start inclusive to
-        logging.debug(f"Creating Dates Range from{fromDate} to {toDate}")
+        self.logger.debug(f"Creating Dates Range from{fromDate} to {toDate}")
         dates = []
         itter = fromDate
 
-        logging.debug(f"Apptoing {fromDate} to Range")
+        self.logger.debug(f"Apptoing {fromDate} to Range")
         dates.append(fromDate)
 
         while itter != toDate:
             itter = itter + timedelta(days=1)
-            logging.debug(f"Appending {itter} to Range")
+            self.logger.debug(f"Appending {itter} to Range")
             dates.append(itter)
 
         return dates
