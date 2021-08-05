@@ -1,44 +1,48 @@
+from __future__ import annotations
 from enum import Enum
+from typing import List
+from datetime import date
 import pandas as pd
 
 
-# TODO functions typisieren
 class ScanModel:
     dataframe = pd.DataFrame()
 
     # PERF: Could be faster if multiple rows are generated, then concatenated
-    def addSeat(self, date, room_name, timeslot_name, seat_model):
+    def addSeat(
+        self, date: date, room_name: str, timeslot_name: str, seat_model: SeatModel
+    ) -> None:
         self.dataframe = self.dataframe.append(
             pd.DataFrame([seat_model], index=[[date], [room_name], [timeslot_name]])
         )
 
-    def createFromDataframe__(self, dataframe):
+    def createFromDataframe__(self, dataframe: pd.DataFrame) -> ScanModel:
         scan_model = ScanModel()
         scan_model.dataframe = dataframe
         return scan_model
 
-    def getAvailableDays(self):
+    def getAvailableDays(self) -> List[date]:
         """
         Get list of date objects with all days in
         scan modell
         """
         return list(self.dataframe.index.unique(level=0))
 
-    def getAvailableRooms(self):
+    def getAvailableRooms(self) -> List[str]:
         """
         Get list of strings with all rooms in
         scan modell
         """
         return list(self.dataframe.index.unique(level=1))
 
-    def getAvailableTimeslots(self):
+    def getAvailableTimeslots(self) -> List[str]:
         """
         Get list of strings with all timesots in
         scan modell
         """
         return list(self.dataframe.index.unique(level=2))
 
-    def getFromDays(self, days):
+    def getFromDays(self, days: List[date]) -> ScanModel:
         """Slice scan with days of interest.
 
         :days: list of datetime.date objects
@@ -50,7 +54,7 @@ class ScanModel:
         scan_model = self.createFromDataframe__(dataframe)
         return scan_model
 
-    def getFromRooms(self, rooms):
+    def getFromRooms(self, rooms: List[str]) -> ScanModel:
         """Slice scan with rooms of interest.
 
         :rooms: list of room Names as strings
@@ -62,7 +66,7 @@ class ScanModel:
         scan_model = self.createFromDataframe__(dataframe)
         return scan_model
 
-    def getFromTimeslots(self, timeslots):
+    def getFromTimeslots(self, timeslots: List[str]) -> ScanModel:
         """Slice scan with timeslots of interest.
 
         :timeslots: list of timeslot Names as strings
@@ -74,12 +78,12 @@ class ScanModel:
         scan_model = self.createFromDataframe__(dataframe)
         return scan_model
 
-    def getFreePlaces(self):
-        """ Get free places from given Scan Model
-        :returns: List SeatModels 
+    def getFreePlaces(self) -> List[SeatModel]:
+        """Get free places from given Scan Model
+        :returns: List SeatModels
 
         """
-        # HACK: position 0 index is a hack. 
+        # HACK: position 0 index is a hack.
         # Would be better if it was not necessary
         free_places = []
         for _, row in self.dataframe.iterrows():
@@ -89,12 +93,12 @@ class ScanModel:
 
         return free_places
 
-    def getReservedPlaces(self):
-        """ Get reserved places from given Scan Model
-        :returns: List SeatModels 
+    def getReservedPlaces(self) -> List[SeatModel]:
+        """Get reserved places from given Scan Model
+        :returns: List SeatModels
 
         """
-        # HACK: position 0 index is a hack. 
+        # HACK: position 0 index is a hack.
         # Would be better if it was not necessary
         reserved_places = []
         for _, row in self.dataframe.iterrows():
@@ -111,6 +115,7 @@ class RoomModel:
         self.roomName = roomName
         self.day_model = None
 
+
 class SeatModel:
     def __init__(self, url, number, field_text, handler):
         self.url = url
@@ -121,19 +126,16 @@ class SeatModel:
         self.handler = handler
         self.timeslotModel = None
 
-    def setHandler(self, handler):
+    def setHandler(self, handler: handlerInterface) -> None:
         self.handler = handler
 
-    def setTimeslot(self, timeslot):
-        self.timeSlotModel = timeslot
-
-    def reserve(self):
+    def reserve(self) -> None:
         self.handler.reserveSeat(self)
 
-    def cancel(self):
+    def cancel(self) -> None:
         self.handler.cancelSeat(self)
 
-    def checkState(self):
+    def checkState(self) -> None:
         text = self.field_text
         if text == "[X]":
             self.state = State.OCCUPIED
@@ -150,8 +152,8 @@ class State(Enum):
 
 
 class handlerInterface:
-    def reserveSeat(self, seat):
+    def reserveSeat(self, seat: SeatModel):  # noqa
         pass
 
-    def cancelSeat(self, seat):
+    def cancelSeat(self, seat: SeatModel):
         pass

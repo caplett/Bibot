@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 from datetime import date
 
@@ -7,8 +7,8 @@ class Config:
     username: str
     password: str
 
-    rooms: List[str] = []
-    timeslots: List[str] = []
-    days: List[date] = [date.today()]
+    rooms: List[str] =  field(default_factory=list)
+    timeslots: List[str] = field(default_factory=list)
+    days: List[date] = field(default_factory=lambda: [date.today()])
 
 
