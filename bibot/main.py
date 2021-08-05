@@ -1,6 +1,6 @@
 from bibot.entities.config import Config
 from bibot.handler.browserHandler import SeleniumSession
-from datetime import date, timedelta
+from datetime import date 
 
 # TODO: Logging
 if __name__ == "__main__":
